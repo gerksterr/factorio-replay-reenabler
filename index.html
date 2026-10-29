@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Factorio Replay Re-enabler</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  /* layout: one 46rem column; the tool card first, the routine and fine print below */
+  --bg: #eceae6;
+  --panel: #f8f7f4;
+  --ink: #23262a;
+  --muted: #5f646b;
+  --line: #d3d0c9;
+  --accent: #b5520f;
+  --accent-ink: #ffffff;
+  --ok: #2f7a43;
+  --warn: #a8610a;
+  --bad: #b3261e;
+  --wash: #f1e4d6;
+  --display: "Chakra Petch", "Arial Narrow", system-ui, sans-serif;
+  --body: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, Consolas, monospace;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #17191c; --panel: #212428; --ink: #e8e6e1; --muted: #a2a7ad; --line: #353a40;
+    --accent: #f0a043; --accent-ink: #1b1d20; --ok: #6cc184; --warn: #f0b45a; --bad: #f2877e; --wash: #2c2620;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #17191c; --panel: #212428; --ink: #e8e6e1; --muted: #a2a7ad; --line: #353a40;
+  --accent: #f0a043; --accent-ink: #1b1d20; --ok: #6cc184; --warn: #f0b45a; --bad: #f2877e; --wash: #2c2620;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body { background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--body); }
+main { max-width: 46rem; margin: 0 auto; padding: 40px 20px 56px; display: grid; gap: 28px; }
+h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h1 { font-size: 2.1rem; line-height: 1.1; }
+h2 { font-size: 1.15rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+p { margin: 0; max-width: 65ch; }
+header { display: grid; gap: 10px; }
+header p { color: var(--muted); font-size: 1.05rem; }
+a { color: var(--accent); }
+code, .mono { font-family: var(--mono); font-size: .92em; }
+
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 18px; }
+.drop { border: 2px dashed var(--line); border-radius: 8px; padding: 22px; display: grid; gap: 6px; justify-items: start; cursor: pointer; transition: border-color .15s, background .15s; }
+.drop:hover, .drop.over { border-color: var(--accent); background: var(--wash); }
+.drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
+.drop strong { font-size: 1.05rem; }
+.drop span { color: var(--muted); font-size: .95rem; }
+.drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+
+.result { display: grid; gap: 14px; }
+.result.example { opacity: .72; }
+.tag { justify-self: start; font: 600 .72rem/1 var(--body); text-transform: uppercase; letter-spacing: .08em; color: var(--muted); border: 1px solid var(--line); border-radius: 4px; padding: 4px 6px; }
+.status { display: flex; flex-wrap: wrap; align-items: flex-start; gap: 10px 12px; }
+.status .pill { margin-top: 2px; }
+.pill { font: 600 .82rem/1 var(--body); padding: 6px 10px; border-radius: 999px; border: 1px solid currentColor; white-space: nowrap; }
+.pill.warn { color: var(--warn); } .pill.ok { color: var(--ok); } .pill.bad { color: var(--bad); } .pill.neutral { color: var(--muted); }
+.status p { flex: 1 1 18rem; }
+dl { margin: 0; display: grid; grid-template-columns: max-content 1fr; gap: 6px 18px; font-size: .95rem; }
+dt { color: var(--muted); }
+dd { margin: 0; font-family: var(--mono); font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.actions { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; }
+button { font: 600 1rem/1 var(--body); color: var(--accent-ink); background: var(--accent); border: 0; border-radius: 8px; padding: 13px 18px; cursor: pointer; }
+button:disabled { opacity: .45; cursor: not-allowed; }
+button:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+label.check { display: flex; gap: 8px; align-items: flex-start; font-size: .95rem; color: var(--muted); }
+label.check input { margin-top: 4px; accent-color: var(--accent); }
+.msg { border-left: 3px solid var(--line); padding: 2px 0 2px 12px; }
+.msg.ok { border-color: var(--ok); } .msg.bad { border-color: var(--bad); color: var(--bad); }
+[hidden] { display: none !important; }
+
+section { display: grid; gap: 12px; }
+ol, ul { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 65ch; }
+ol li::marker { font-family: var(--display); font-weight: 700; color: var(--accent); }
+footer { color: var(--muted); font-size: .88rem; border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 6px; }
+@media (max-width: 420px) { main { padding: 28px 16px 44px; } h1 { font-size: 1.75rem; } dl { grid-template-columns: 1fr; gap: 0 0; } dd { margin-bottom: 8px; } }
+@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Factorio Replay Re-enabler</h1>
+    <p>Factorio switches replay recording off when you load a save in a newer version. This page switches it back on, with the replay starting from the save's current state. The save stays a normal Freeplay game: no scenario, no map editor, no mods.</p>
+  </header>
+
+  <div class="card">
+    <label class="drop" id="drop" for="file">
+      <strong>Choose a save, or drop it here</strong>
+      <span>A <code>.zip</code> from your Factorio <code>saves</code> folder. It is processed in your browser and never uploaded.</span>
+      <input type="file" id="file" accept=".zip,application/zip">
+    </label>
+
+    <div class="result example" id="result">
+      <span class="tag" id="tag">Example</span>
+      <div class="status">
+        <span class="pill warn" id="pill">Replay switched off by update</span>
+        <p id="explain">Factorio 2.1.24 switched replay off because this map's replay was recorded in 2.1.23. Switch it back on and this file records a new replay from where it is now.</p>
+      </div>
+      <dl>
+        <dt>File</dt><dd id="r-file">mybase_2.1.24.zip</dd>
+        <dt>Game version</dt><dd id="r-ver">2.1.24</dd>
+        <dt>Replay recording</dt><dd id="r-rec">off</dd>
+        <dt>Replay starts from</dt><dd id="r-init">map state from 2.1.23</dd>
+        <dt>Recorded actions</dt><dd id="r-act">none</dd>
+      </dl>
+      <label class="check" id="force-row" hidden><input type="checkbox" id="force"> <span>Start a fresh replay from here anyway. The actions recorded in this file are dropped.</span></label>
+      <div class="actions">
+        <button id="go" disabled>Switch replay on and save</button>
+      </div>
+      <p class="msg" id="msg" hidden></p>
+    </div>
+  </div>
+
+  <section>
+    <h2>At every game update</h2>
+    <ol>
+      <li>Load your latest save in the new version and immediately <strong>Save as</strong> a new name, for example <code>mybase_2.1.24</code>. Quit to the menu.</li>
+      <li>Drop that new save on this page and save the result.</li>
+      <li>Put the result in your <code>saves</code> folder in place of the file you dropped, and keep playing from it.</li>
+    </ol>
+    <p>Whatever you do between loading the save in the new version and finishing these steps isn't recorded, so do them right away.</p>
+  </section>
+
+  <section>
+    <h2>Watching it back</h2>
+    <ul>
+      <li>Each file holds the replay for one game version. Your older saves keep theirs: open the last save of each version in that version of Factorio and choose <strong>Start replay</strong>. Old versions are at <a href="https://factorio.com/download/archive">factorio.com/download/archive</a> (standalone zip, runs beside the Steam version).</li>
+      <li>Saving during a replay gives you a normal save you can keep playing from.</li>
+      <li>Keep the mouse off inventory windows the replay opens. In testing, hovering over a slot made the game crash.</li>
+      <li>With mods, a replay only plays back with exactly the same mods and versions.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>What it changes in the save</h2>
+    <ul>
+      <li>One byte in the map header: the replay switch, set to on.</li>
+      <li><code>level-init.dat</code>, the replay's starting state, is replaced by the save's current map state.</li>
+      <li><code>replay.dat</code>, the recorded actions, is emptied.</li>
+      <li>Every other file in the zip is copied unchanged.</li>
+    </ul>
+  </section>
+
+  <footer>
+    <p>Tested with Factorio 2.1.23 to 2.1.24 (Space Age, no mods). Understands saves from 2.0 and 2.1 and refuses anything else. Keep a backup of saves you care about.</p>
+    <p>Unofficial. Not made by or affiliated with Wube Software.</p>
+  </footer>
+</main>
+
+<script>
+// ---- Factorio save surgery: re-enable replay from the save's current state ----
+// Pure browser JS (also runs in Node 18+). No libraries.
+
+const SIG_EOCD = 0x06054b50, SIG_CEN = 0x02014b50, SIG_LOC = 0x04034b50;
+
+class SaveError extends Error {}
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let n = 0; n < 256; n++) {
+    let c = n;
+    for (let k = 0; k < 8; k++) c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+    t[n] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32(parts) {
+  let c = 0xffffffff;
+  for (const p of parts) for (let i = 0; i < p.length; i++) c = CRC_TABLE[(c ^ p[i]) & 0xff] ^ (c >>> 8);
+  return (c ^ 0xffffffff) >>> 0;
+}
+
+async function pipe(parts, transform) {
+  const stream = new Blob(parts).stream().pipeThrough(transform);
+  return new Uint8Array(await new Response(stream).arrayBuffer());
+}
+const inflateRaw = (b) => pipe([b], new DecompressionStream("deflate-raw"));
+const inflateZlib = (b) => pipe([b], new DecompressionStream("deflate"));
+const deflateRaw = (parts) => pipe(parts, new CompressionStream("deflate-raw"));
+const deflateZlib = (b) => pipe([b], new CompressionStream("deflate"));
+
+function readZip(bytes) {
+  const dv = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let eocd = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65557); i--) {
+    if (dv.getUint32(i, true) === SIG_EOCD) { eocd = i; break; }
+  }
+  if (eocd < 0) throw new SaveError("This isn't a zip file. Factorio saves are .zip files from your saves folder.");
+  const count = dv.getUint16(eocd + 10, true);
+  const cdOffset = dv.getUint32(eocd + 16, true);
+  if (count === 0xffff || cdOffset === 0xffffffff) throw new SaveError("This save is too large for this page (zip64).");
+  const dec = new TextDecoder();
+  const entries = [];
+  let p = cdOffset;
+  for (let n = 0; n < count; n++) {
+    if (dv.getUint32(p, true) !== SIG_CEN) throw new SaveError("The zip file is damaged.");
+    const e = {
+      flags: dv.getUint16(p + 8, true), method: dv.getUint16(p + 10, true),
+      time: dv.getUint16(p + 12, true), date: dv.getUint16(p + 14, true),
+      crc: dv.getUint32(p + 16, true), csize: dv.getUint32(p + 20, true), usize: dv.getUint32(p + 24, true),
+    };
+    const nameLen = dv.getUint16(p + 28, true), extraLen = dv.getUint16(p + 30, true), commLen = dv.getUint16(p + 32, true);
+    const local = dv.getUint32(p + 42, true);
+    e.nameBytes = bytes.subarray(p + 46, p + 46 + nameLen);
+    e.name = dec.decode(e.nameBytes);
+    p += 46 + nameLen + extraLen + commLen;
+    if (dv.getUint32(local, true) !== SIG_LOC) throw new SaveError("The zip file is damaged.");
+    const start = local + 30 + dv.getUint16(local + 26, true) + dv.getUint16(local + 28, true);
+    e.data = bytes.subarray(start, start + e.csize);
+    if (!e.name.endsWith("/")) entries.push(e);
+  }
+  return entries;
+}
+
+async function entryBytes(e) {
+  if (e.method === 0) return e.data;
+  if (e.method === 8) return inflateRaw(e.data);
+  throw new SaveError(`Unsupported zip compression in ${e.name}.`);
+}
+
+// Level header layout as seen in Factorio 2.0 / 2.1.
+function parseHeader(b) {
+  if (!b || b.length < 40) throw new SaveError("Unrecognised save format.");
+  let p = 8;
+  const version = [0, 2, 4, 6].map((i) => b[i] | (b[i + 1] << 8));
+  const str = () => { const n = b[p++]; const s = new TextDecoder().decode(b.subarray(p, p + n)); p += n; return s; };
+  p++; // unknown byte
+  str(); // campaign
+  const scenario = str();
+  const baseMod = str();
+  p += 3; // difficulty, finished, player_won
+  str(); // next level
+  p += 2; // can_continue, finished_but_continuing
+  const flagOffset = p;
+  const replay = b[p++];
+  const debug = b[p++];
+  if (version[0] < 2 || baseMod !== "base" || replay > 1 || debug > 1)
+    throw new SaveError("Unrecognised save format. This page understands saves from Factorio 2.0 and 2.1.");
+  return { version, v: version.slice(0, 3).join("."), scenario, flagOffset, replay };
+}
+
+const chunkNo = (rel) => { const m = /^level\.dat(\d+)$/.exec(rel); return m ? +m[1] : null; };
+
+async function analyzeSave(bytes) {
+  const entries = readZip(bytes);
+  const roots = new Set(entries.map((e) => e.name.split("/")[0]));
+  if (roots.size !== 1) throw new SaveError("This zip doesn't look like a Factorio save.");
+  const root = [...roots][0];
+  const rel = (e) => e.name.slice(root.length + 1);
+  const byRel = new Map(entries.map((e) => [rel(e), e]));
+  const chunks = entries.filter((e) => chunkNo(rel(e)) !== null).sort((a, b) => chunkNo(rel(a)) - chunkNo(rel(b)));
+  const single = byRel.get("level.dat");
+  if (!chunks.length && !single) throw new SaveError("No level.dat in this zip. Is it a Factorio save?");
+  const first = chunks.length ? await inflateZlib(chunks[0].data) : await entryBytes(single);
+  const header = parseHeader(first);
+  const initE = byRel.get("level-init.dat");
+  let init = null;
+  if (initE) {
+    try { init = parseHeader((await entryBytes(initE)).subarray(0, 4096)); } catch { init = null; }
+  }
+  const replayE = byRel.get("replay.dat");
+  const replaySize = replayE ? replayE.usize : null;
+  let state;
+  if (header.replay === 1 && replayE && init && init.v === header.v) state = "recording";
+  else if (header.replay === 0 && init && init.replay === 1 && init.v !== header.v) state = "switched-off";
+  else if (header.replay === 0) state = "never";
+  else state = "odd";
+  return { entries, root, rel, byRel, chunks, single, first, header, init, replaySize, state };
+}
+
+// Returns Blob parts for the new zip.
+async function buildReenabled(a) {
+  const patchedFirst = a.first.slice();
+  patchedFirst[a.header.flagOffset] = 1;
+  const out = []; // {name bytes, method, crc, csize, usize, data parts, time, date, flags}
+  const enc = new TextEncoder();
+  const add = (rel, method, crc, csize, usize, parts, time = 0, date = 0) =>
+    out.push({ nameBytes: enc.encode(`${a.root}/${rel}`), method, crc, csize, usize, parts, time, date });
+
+  let levelParts;
+  for (const e of a.entries) {
+    const r = a.rel(e);
+    if (r === "level-init.dat" || r === "replay.dat") continue;
+    if (a.chunks.length && e === a.chunks[0]) {
+      const z = await deflateZlib(patchedFirst);
+      add(r, 0, crc32([z]), z.length, z.length, [z], e.time, e.date);
+    } else if (!a.chunks.length && e === a.single) {
+      const d = await deflateRaw([patchedFirst]);
+      add(r, 8, crc32([patchedFirst]), d.length, patchedFirst.length, [d], e.time, e.date);
+    } else {
+      out.push({ nameBytes: e.nameBytes, method: e.method, crc: e.crc, csize: e.csize, usize: e.usize, parts: [e.data], time: e.time, date: e.date });
+    }
+  }
+  if (a.chunks.length) {
+    levelParts = [patchedFirst];
+    for (const c of a.chunks.slice(1)) levelParts.push(await inflateZlib(c.data));
+  } else levelParts = [patchedFirst];
+  const usize = levelParts.reduce((s, x) => s + x.length, 0);
+  const initZ = await deflateRaw(levelParts);
+  add("level-init.dat", 8, crc32(levelParts), initZ.length, usize, [initZ]);
+  add("replay.dat", 0, 0, 0, 0, []);
+  return writeZip(out);
+}
+
+function writeZip(files) {
+  const parts = [];
+  const central = [];
+  let offset = 0;
+  for (const f of files) {
+    const n = f.nameBytes.length;
+    const h = new DataView(new ArrayBuffer(30));
+    h.setUint32(0, SIG_LOC, true); h.setUint16(4, 20, true); h.setUint16(6, 0x0800, true);
+    h.setUint16(8, f.method, true); h.setUint16(10, f.time, true); h.setUint16(12, f.date, true);
+    h.setUint32(14, f.crc, true); h.setUint32(18, f.csize, true); h.setUint32(22, f.usize, true);
+    h.setUint16(26, n, true); h.setUint16(28, 0, true);
+    parts.push(new Uint8Array(h.buffer), f.nameBytes, ...f.parts);
+    const c = new DataView(new ArrayBuffer(46));
+    c.setUint32(0, SIG_CEN, true); c.setUint16(4, 20, true); c.setUint16(6, 20, true); c.setUint16(8, 0x0800, true);
+    c.setUint16(10, f.method, true); c.setUint16(12, f.time, true); c.setUint16(14, f.date, true);
+    c.setUint32(16, f.crc, true); c.setUint32(20, f.csize, true); c.setUint32(24, f.usize, true);
+    c.setUint16(28, n, true); c.setUint32(42, offset, true);
+    central.push(new Uint8Array(c.buffer), f.nameBytes);
+    offset += 30 + n + f.csize;
+    if (offset > 0xffffffff) throw new SaveError("The result would be larger than 4 GB, which this page can't write.");
+  }
+  const cdSize = central.reduce((s, x) => s + x.length, 0);
+  const e = new DataView(new ArrayBuffer(22));
+  e.setUint32(0, SIG_EOCD, true); e.setUint16(8, files.length, true); e.setUint16(10, files.length, true);
+  e.setUint32(12, cdSize, true); e.setUint32(16, offset, true);
+  return [...parts, ...central, new Uint8Array(e.buffer)];
+}
+
+
+</script>
+<script>
+(() => {
+  const $ = (id) => document.getElementById(id);
+  const drop = $("drop"), fileIn = $("file"), go = $("go"), msg = $("msg"), force = $("force"), forceRow = $("force-row");
+  let current = null; // { file, analysis }
+  let downloads; // undefined: not asked yet, null: not available
+
+  const kb = (n) => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`;
+  const show = (text, kind) => { msg.textContent = text; msg.className = `msg ${kind || ""}`; msg.hidden = !text; };
+
+  const STATES = {
+    "switched-off": { pill: "Replay switched off by update", cls: "warn",
+      text: (a) => `Factorio ${a.header.v} switched replay off because this map's replay was recorded in ${a.init.v}. Switch it back on and this file records a new replay from where it is now.` },
+    "never": { pill: "No replay", cls: "neutral",
+      text: () => "This save has never recorded a replay. Switch it on to record from this point on." },
+    "recording": { pill: "Recording", cls: "ok",
+      text: (a) => `Replay recording is already on in this save, with ${kb(a.replaySize)} of actions since its start. There's nothing to fix.` },
+    "odd": { pill: "Unusual", cls: "warn",
+      text: () => "Replay is switched on, but the recorded actions or the starting state don't match this version. Switching it on again starts a clean replay from here." },
+  };
+
+  function render(file, a) {
+    const st = STATES[a.state];
+    $("result").classList.remove("example");
+    $("tag").hidden = true;
+    $("pill").textContent = st.pill;
+    $("pill").className = `pill ${st.cls}`;
+    $("explain").textContent = st.text(a);
+    $("r-file").textContent = file.name;
+    $("r-ver").textContent = a.header.v;
+    $("r-rec").textContent = a.header.replay ? "on" : "off";
+    $("r-init").textContent = a.init ? `map state from ${a.init.v}` : "none";
+    $("r-act").textContent = a.replaySize == null ? "none" : kb(a.replaySize);
+    forceRow.hidden = a.state !== "recording";
+    force.checked = false;
+    go.disabled = a.state === "recording";
+  }
+
+  async function load(file) {
+    show("");
+    go.disabled = true;
+    current = null;
+    try {
+      const a = await analyzeSave(new Uint8Array(await file.arrayBuffer()));
+      current = { file, a };
+      render(file, a);
+    } catch (e) {
+      $("result").classList.remove("example");
+      $("tag").hidden = true;
+      $("pill").textContent = "Can't use this file";
+      $("pill").className = "pill bad";
+      $("explain").textContent = e instanceof SaveError ? e.message : `Reading the file failed: ${e.message}`;
+      ["r-file", "r-ver", "r-rec", "r-init", "r-act"].forEach((id) => ($(id).textContent = "–"));
+      $("r-file").textContent = file.name;
+      forceRow.hidden = true;
+    }
+  }
+
+  fileIn.addEventListener("change", () => fileIn.files[0] && load(fileIn.files[0]));
+  ["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("over"); }));
+  ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
+  drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) load(f); });
+  force.addEventListener("change", () => { go.disabled = !force.checked; });
+
+  if (window.claude && typeof window.claude.use === "function") {
+    window.claude.use("downloads").then((d) => { downloads = d; }, () => { downloads = null; });
+  } else downloads = null;
+
+  async function deliver(blob, name) {
+    if (window.claude && typeof window.claude.use === "function") {
+      if (downloads === undefined) downloads = await window.claude.use("downloads").catch(() => null);
+      if (!downloads) throw new Error("This view can't save files. Open the page from its own link to use it.");
+      try { await downloads.save({ filename: name, data: blob }); return true; }
+      catch (e) {
+        if (e && e.code === "declined") return false;
+        throw new Error(e && e.message ? e.message : "Saving the file failed.");
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url; link.download = name;
+    document.body.appendChild(link); link.click(); link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 60000);
+    return true;
+  }
+
+  go.addEventListener("click", async () => {
+    if (!current) return;
+    go.disabled = true;
+    show("Working…");
+    try {
+      const blob = new Blob(await buildReenabled(current.a), { type: "application/zip" });
+      const saved = await deliver(blob, current.file.name);
+      show(saved
+        ? `Saved ${current.file.name} (${kb(blob.size)}). Put it in your saves folder in place of the original and keep playing from it.`
+        : "Not saved. Press the button again when you're ready.", saved ? "ok" : "");
+    } catch (e) {
+      show(e instanceof SaveError ? e.message : e.message || "Something went wrong.", "bad");
+    } finally {
+      go.disabled = current.a.state === "recording" && !force.checked;
+    }
+  });
+})();
+</script>
+</body>
+</html>
