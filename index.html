@@ -98,7 +98,7 @@ footer { color: var(--muted); font-size: .88rem; border-top: 1px solid var(--lin
 <main>
   <header>
     <h1>Factorio Replay Re-enabler</h1>
-    <p>Two fixes for Factorio's replays. When you load a save in a newer version, the game switches replay recording off: the first tool switches it back on. The second makes a replay start later, so you don't have to sit through hours of it to reach the part you want. Saves are processed in your browser and never uploaded.</p>
+    <p>Factorio switches replay recording off when you load a save in a newer version. This page switches it back on, with the replay starting from the save's current state. The save stays a normal Freeplay game: no scenario, no map editor, no mods. Saves are processed in your browser and never uploaded.</p>
   </header>
 
   <div class="card" id="t1">
@@ -138,56 +138,58 @@ footer { color: var(--muted); font-size: .88rem; border-top: 1px solid var(--lin
     <p class="note">Your save keeps its name; only the copies of finished versions carry a version number. Anything you play between steps 2 and 4 isn't recorded.</p>
   </section>
 
-  <div class="card" id="t2">
-    <h3>Start a replay later</h3>
-    <p>Load your save, choose <strong>Start replay</strong> and save when it reaches the moment the new replay should start. Drop that save and the original here. You get a copy whose replay starts at that moment and ends where the original does.</p>
-    <div class="drops">
-      <label class="drop" id="drop2a" for="file2a">
-        <strong>Save with the full replay</strong>
-        <span>For example <code>MySave.zip</code></span>
-        <span class="picked" id="pick2a"></span>
-        <input type="file" id="file2a" accept=".zip,application/zip">
-      </label>
-      <label class="drop" id="drop2b" for="file2b">
-        <strong>Save made while watching it</strong>
-        <span>At the new start point, for example <code>MySave_5h45.zip</code></span>
-        <span class="picked" id="pick2b"></span>
-        <input type="file" id="file2b" accept=".zip,application/zip">
-      </label>
-    </div>
-    <div class="result example" id="res2">
-      <span class="tag" id="tag2">Example</span>
-      <div class="status">
-        <span class="pill ok" id="pill2">Ready</span>
-        <p id="explain2">The replay will start at 5:45:17 instead of 4:59:24 and play the remaining actions exactly as recorded.</p>
-      </div>
-      <dl>
-        <dt>Game version</dt><dd id="r2-ver">2.1.24</dd>
-        <dt>Full replay starts</dt><dd id="r2-from">4:59:24</dd>
-        <dt>New replay starts</dt><dd id="r2-to">5:45:17</dd>
-        <dt>Actions kept</dt><dd id="r2-kept">530.7 KB</dd>
-        <dt>New file</dt><dd id="r2-out">MySave_from_5h45.zip</dd>
-      </dl>
-      <div class="actions"><button id="go2" disabled>Build the shorter replay and save</button></div>
-      <p class="msg" id="msg2" hidden></p>
-    </div>
-  </div>
-
   <section>
     <h2>Watching it back</h2>
     <ul>
       <li>Each version's copy plays in that version of Factorio. Old versions are at <a href="https://factorio.com/download/archive">factorio.com/download/archive</a> as standalone zips that run beside the Steam version.</li>
-      <li>You can't move the camera freely during a replay. Save during it and load that save to look around.</li>
+      <li>You can't move the camera freely during a replay. Save during it and load that save to look around. To skip ahead in a long replay, see the extra tool below.</li>
       <li>Keep the mouse off inventory windows the replay opens. In testing, hovering over a slot made the game crash.</li>
       <li>With mods, a replay only plays back with exactly the same mods and versions.</li>
     </ul>
   </section>
 
   <section>
+    <h2>Extra: start a replay later</h2>
+    <p class="note">To skip the first hours of a long replay: load your save, choose <strong>Start replay</strong> and save when it reaches the moment the new replay should start. Drop that save and the original here. You get a copy whose replay starts at that moment and ends where the original does.</p>
+    <div class="card" id="t2">
+      <div class="drops">
+        <label class="drop" id="drop2a" for="file2a">
+          <strong>Save with the full replay</strong>
+          <span>For example <code>MySave.zip</code></span>
+          <span class="picked" id="pick2a"></span>
+          <input type="file" id="file2a" accept=".zip,application/zip">
+        </label>
+        <label class="drop" id="drop2b" for="file2b">
+          <strong>Save made while watching it</strong>
+          <span>At the new start point, for example <code>MySave_5h45.zip</code></span>
+          <span class="picked" id="pick2b"></span>
+          <input type="file" id="file2b" accept=".zip,application/zip">
+        </label>
+      </div>
+      <div class="result example" id="res2">
+        <span class="tag" id="tag2">Example</span>
+        <div class="status">
+          <span class="pill ok" id="pill2">Ready</span>
+          <p id="explain2">The replay will start at 5:45:17 instead of 4:59:24 and play the remaining actions exactly as recorded.</p>
+        </div>
+        <dl>
+          <dt>Game version</dt><dd id="r2-ver">2.1.24</dd>
+          <dt>Full replay starts</dt><dd id="r2-from">4:59:24</dd>
+          <dt>New replay starts</dt><dd id="r2-to">5:45:17</dd>
+          <dt>Actions kept</dt><dd id="r2-kept">530.7 KB</dd>
+          <dt>New file</dt><dd id="r2-out">MySave_from_5h45.zip</dd>
+        </dl>
+        <div class="actions"><button id="go2" disabled>Build the shorter replay and save</button></div>
+        <p class="msg" id="msg2" hidden></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <h2>What it changes in the save</h2>
     <ul>
-      <li><strong>Switch replay back on:</strong> sets the replay switch, one byte in the map header, to on; replaces <code>level-init.dat</code>, the replay's starting state, with the save's current map; empties <code>replay.dat</code>, the recorded actions.</li>
-      <li><strong>Start a replay later:</strong> takes the save with the full replay and replaces its <code>level-init.dat</code> with the map from the later start point and its <code>replay.dat</code> with the actions after that point.</li>
+      <li><strong>Switching replay back on</strong> sets the replay switch, one byte in the map header, to on; replaces <code>level-init.dat</code>, the replay's starting state, with the save's current map; empties <code>replay.dat</code>, the recorded actions.</li>
+      <li><strong>Starting a replay later</strong> takes the save with the full replay and replaces its <code>level-init.dat</code> with the map from the later start point and its <code>replay.dat</code> with the actions after that point.</li>
       <li>Every other file in the zip is copied unchanged.</li>
     </ul>
   </section>

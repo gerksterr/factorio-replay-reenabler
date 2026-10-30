@@ -2,10 +2,9 @@
 
 **Use it:** https://gerksterr.github.io/factorio-replay-reenabler/
 
-Two fixes for Factorio's replays, running entirely in your browser (saves are never uploaded):
+Factorio switches replay recording off when you load a save in a newer version. This page switches it back on, with the replay starting from the save's current state. The save stays a normal Freeplay game: no scenario, no map editor, no mods.
 
-- **Switch replay back on after an update.** When you load a save in a newer version, Factorio switches replay recording off. This puts it back on, with the replay starting from the save's current state. The save stays a normal Freeplay game: no scenario, no map editor, no mods.
-- **Start a replay later.** Save while watching a replay, drop that save and the original, and get a copy whose replay starts at that moment, so you don't have to sit through hours to reach the part you want.
+Everything runs in your browser. The save is never uploaded.
 
 ## At every game update
 
@@ -18,7 +17,9 @@ Your save keeps its name; only the copies of finished versions carry a version n
 
 Each version's copy plays in that version of Factorio (old versions: <https://factorio.com/download/archive>, standalone zip). You can't move the camera freely during a replay: save during it and load that save to look around.
 
-## Start a replay later
+## Extra: start a replay later
+
+To skip the first hours of a long replay:
 
 1. Load your save, choose **Start replay** and save when it reaches the moment the new replay should start (for example `MySave_5h45.zip`).
 2. Drop that save and the original on the page.
@@ -30,9 +31,9 @@ Saves made during a replay contain exactly the actions played so far, so the pag
 
 A Factorio save keeps its replay as two files: `level-init.dat` (the map when recording started) and `replay.dat` (every input action since, append-only). On a version change the game sets the replay flag in the map header to off and drops `replay.dat`.
 
-**Switch replay back on** sets the replay flag (one byte in the map header) back to on, replaces `level-init.dat` with the save's current map state and writes an empty `replay.dat`.
+**Switching replay back on** sets the replay flag (one byte in the map header) back to on, replaces `level-init.dat` with the save's current map state and writes an empty `replay.dat`.
 
-**Start a replay later** takes the save with the full replay, replaces its `level-init.dat` with the map from the later start point and its `replay.dat` with the actions after that point.
+**Starting a replay later** takes the save with the full replay, replaces its `level-init.dat` with the map from the later start point and its `replay.dat` with the actions after that point.
 
 Every other file in the zip is copied unchanged.
 
