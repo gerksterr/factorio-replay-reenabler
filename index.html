@@ -9,7 +9,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@600;700&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
 :root {
-  /* layout: one 46rem column; the tool card first, the routine and fine print below */
+  /* layout: one 46rem column; each tool is a card followed by its routine, fine print last */
   --bg: #eceae6;
   --panel: #f8f7f4;
   --ink: #23262a;
@@ -42,21 +42,25 @@
 html, body { margin: 0; }
 body { background: var(--bg); color: var(--ink); font: 400 16px/1.55 var(--body); }
 main { max-width: 46rem; margin: 0 auto; padding: 40px 20px 56px; display: grid; gap: 28px; }
-h1, h2 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: .01em; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; letter-spacing: .01em; }
 h1 { font-size: 2.1rem; line-height: 1.1; }
 h2 { font-size: 1.15rem; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); }
+h3 { font-size: 1.35rem; line-height: 1.2; }
 p { margin: 0; max-width: 65ch; }
 header { display: grid; gap: 10px; }
 header p { color: var(--muted); font-size: 1.05rem; }
 a { color: var(--accent); }
-code, .mono { font-family: var(--mono); font-size: .92em; }
+code { font-family: var(--mono); font-size: .92em; }
 
 .card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 20px; display: grid; gap: 18px; }
-.drop { border: 2px dashed var(--line); border-radius: 8px; padding: 22px; display: grid; gap: 6px; justify-items: start; cursor: pointer; transition: border-color .15s, background .15s; }
+.card > p { color: var(--muted); }
+.drops { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.drop { position: relative; border: 2px dashed var(--line); border-radius: 8px; padding: 18px 20px; display: grid; gap: 4px; align-content: start; cursor: pointer; transition: border-color .15s, background .15s; }
 .drop:hover, .drop.over { border-color: var(--accent); background: var(--wash); }
 .drop:focus-within { outline: 2px solid var(--accent); outline-offset: 2px; }
-.drop strong { font-size: 1.05rem; }
-.drop span { color: var(--muted); font-size: .95rem; }
+.drop strong { font-size: 1.02rem; }
+.drop span { color: var(--muted); font-size: .93rem; }
+.drop .picked { font-family: var(--mono); font-size: .88rem; color: var(--ink); overflow-wrap: anywhere; }
 .drop input { position: absolute; width: 1px; height: 1px; opacity: 0; }
 
 .result { display: grid; gap: 14px; }
@@ -83,8 +87,10 @@ label.check input { margin-top: 4px; accent-color: var(--accent); }
 section { display: grid; gap: 12px; }
 ol, ul { margin: 0; padding-left: 1.3em; display: grid; gap: 8px; max-width: 65ch; }
 ol li::marker { font-family: var(--display); font-weight: 700; color: var(--accent); }
+section > p.note { color: var(--muted); }
 footer { color: var(--muted); font-size: .88rem; border-top: 1px solid var(--line); padding-top: 16px; display: grid; gap: 6px; }
-@media (max-width: 420px) { main { padding: 28px 16px 44px; } h1 { font-size: 1.75rem; } dl { grid-template-columns: 1fr; gap: 0 0; } dd { margin-bottom: 8px; } }
+@media (max-width: 560px) { .drops { grid-template-columns: 1fr; } }
+@media (max-width: 420px) { main { padding: 28px 16px 44px; } h1 { font-size: 1.75rem; } dl { grid-template-columns: 1fr; gap: 0; } dd { margin-bottom: 8px; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 </style>
 </head>
@@ -92,52 +98,86 @@ footer { color: var(--muted); font-size: .88rem; border-top: 1px solid var(--lin
 <main>
   <header>
     <h1>Factorio Replay Re-enabler</h1>
-    <p>Factorio switches replay recording off when you load a save in a newer version. This page switches it back on, with the replay starting from the save's current state. The save stays a normal Freeplay game: no scenario, no map editor, no mods.</p>
+    <p>Two fixes for Factorio's replays. When you load a save in a newer version, the game switches replay recording off: the first tool switches it back on. The second makes a replay start later, so you don't have to sit through hours of it to reach the part you want. Saves are processed in your browser and never uploaded.</p>
   </header>
 
-  <div class="card">
-    <label class="drop" id="drop" for="file">
+  <div class="card" id="t1">
+    <h3>Switch replay back on after an update</h3>
+    <label class="drop" id="drop1" for="file1">
       <strong>Choose a save, or drop it here</strong>
-      <span>A <code>.zip</code> from your Factorio <code>saves</code> folder. It is processed in your browser and never uploaded.</span>
-      <input type="file" id="file" accept=".zip,application/zip">
+      <span>The save you just loaded and saved in the new version, from your Factorio <code>saves</code> folder.</span>
+      <input type="file" id="file1" accept=".zip,application/zip">
     </label>
-
-    <div class="result example" id="result">
-      <span class="tag" id="tag">Example</span>
+    <div class="result example" id="res1">
+      <span class="tag" id="tag1">Example</span>
       <div class="status">
-        <span class="pill warn" id="pill">Replay switched off by update</span>
-        <p id="explain">Factorio 2.1.24 switched replay off because this map's replay was recorded in 2.1.23. Switch it back on and this file records a new replay from where it is now.</p>
+        <span class="pill warn" id="pill1">Replay switched off by update</span>
+        <p id="explain1">Factorio 2.1.24 switched replay off because this map's replay was recorded in 2.1.23. Switch it back on and this file records a new replay from where it is now.</p>
       </div>
       <dl>
-        <dt>File</dt><dd id="r-file">mybase_2.1.24.zip</dd>
-        <dt>Game version</dt><dd id="r-ver">2.1.24</dd>
-        <dt>Replay recording</dt><dd id="r-rec">off</dd>
-        <dt>Replay starts from</dt><dd id="r-init">map state from 2.1.23</dd>
-        <dt>Recorded actions</dt><dd id="r-act">none</dd>
+        <dt>File</dt><dd id="r1-file">MySave.zip</dd>
+        <dt>Game version</dt><dd id="r1-ver">2.1.24</dd>
+        <dt>Replay recording</dt><dd id="r1-rec">off</dd>
+        <dt>Replay starts from</dt><dd id="r1-init">map state from 2.1.23</dd>
+        <dt>Recorded actions</dt><dd id="r1-act">none</dd>
       </dl>
       <label class="check" id="force-row" hidden><input type="checkbox" id="force"> <span>Start a fresh replay from here anyway. The actions recorded in this file are dropped.</span></label>
-      <div class="actions">
-        <button id="go" disabled>Switch replay on and save</button>
-      </div>
-      <p class="msg" id="msg" hidden></p>
+      <div class="actions"><button id="go1" disabled>Switch replay on and save</button></div>
+      <p class="msg" id="msg1" hidden></p>
     </div>
   </div>
 
   <section>
     <h2>At every game update</h2>
     <ol>
-      <li>Load your latest save in the new version and immediately <strong>Save as</strong> a new name, for example <code>mybase_2.1.24</code>. Quit to the menu.</li>
-      <li>Drop that new save on this page and save the result.</li>
-      <li>Put the result in your <code>saves</code> folder in place of the file you dropped, and keep playing from it.</li>
+      <li>Before you load your save in the new version, open your Factorio <code>saves</code> folder and copy the save you last made with the previous version, for example <code>MySave.zip</code>. Name the copy after that version, for example <code>MySave_2.1.23.zip</code>. It keeps the whole replay of that version.</li>
+      <li>Start the new version, load <code>MySave</code>, save it under the same name and quit to the menu. Only the game can convert a save to its new version, and this is also when it switches replay off.</li>
+      <li>Drop <code>MySave.zip</code> on the tool above and save the result.</li>
+      <li>Replace <code>MySave.zip</code> in your <code>saves</code> folder with the downloaded file and keep playing.</li>
     </ol>
-    <p>Whatever you do between loading the save in the new version and finishing these steps isn't recorded, so do them right away.</p>
+    <p class="note">Your save keeps its name; only the copies of finished versions carry a version number. Anything you play between steps 2 and 4 isn't recorded.</p>
   </section>
+
+  <div class="card" id="t2">
+    <h3>Start a replay later</h3>
+    <p>Load your save, choose <strong>Start replay</strong> and save when it reaches the moment the new replay should start. Drop that save and the original here. You get a copy whose replay starts at that moment and ends where the original does.</p>
+    <div class="drops">
+      <label class="drop" id="drop2a" for="file2a">
+        <strong>Save with the full replay</strong>
+        <span>For example <code>MySave.zip</code></span>
+        <span class="picked" id="pick2a"></span>
+        <input type="file" id="file2a" accept=".zip,application/zip">
+      </label>
+      <label class="drop" id="drop2b" for="file2b">
+        <strong>Save made while watching it</strong>
+        <span>At the new start point, for example <code>MySave_5h45.zip</code></span>
+        <span class="picked" id="pick2b"></span>
+        <input type="file" id="file2b" accept=".zip,application/zip">
+      </label>
+    </div>
+    <div class="result example" id="res2">
+      <span class="tag" id="tag2">Example</span>
+      <div class="status">
+        <span class="pill ok" id="pill2">Ready</span>
+        <p id="explain2">The replay will start at 5:45:17 instead of 4:59:24 and play the remaining actions exactly as recorded.</p>
+      </div>
+      <dl>
+        <dt>Game version</dt><dd id="r2-ver">2.1.24</dd>
+        <dt>Full replay starts</dt><dd id="r2-from">4:59:24</dd>
+        <dt>New replay starts</dt><dd id="r2-to">5:45:17</dd>
+        <dt>Actions kept</dt><dd id="r2-kept">530.7 KB</dd>
+        <dt>New file</dt><dd id="r2-out">MySave_from_5h45.zip</dd>
+      </dl>
+      <div class="actions"><button id="go2" disabled>Build the shorter replay and save</button></div>
+      <p class="msg" id="msg2" hidden></p>
+    </div>
+  </div>
 
   <section>
     <h2>Watching it back</h2>
     <ul>
-      <li>Each file holds the replay for one game version. Your older saves keep theirs: open the last save of each version in that version of Factorio and choose <strong>Start replay</strong>. Old versions are at <a href="https://factorio.com/download/archive">factorio.com/download/archive</a> (standalone zip, runs beside the Steam version).</li>
-      <li>Saving during a replay gives you a normal save you can keep playing from.</li>
+      <li>Each version's copy plays in that version of Factorio. Old versions are at <a href="https://factorio.com/download/archive">factorio.com/download/archive</a> as standalone zips that run beside the Steam version.</li>
+      <li>You can't move the camera freely during a replay. Save during it and load that save to look around.</li>
       <li>Keep the mouse off inventory windows the replay opens. In testing, hovering over a slot made the game crash.</li>
       <li>With mods, a replay only plays back with exactly the same mods and versions.</li>
     </ul>
@@ -146,22 +186,20 @@ footer { color: var(--muted); font-size: .88rem; border-top: 1px solid var(--lin
   <section>
     <h2>What it changes in the save</h2>
     <ul>
-      <li>One byte in the map header: the replay switch, set to on.</li>
-      <li><code>level-init.dat</code>, the replay's starting state, is replaced by the save's current map state.</li>
-      <li><code>replay.dat</code>, the recorded actions, is emptied.</li>
+      <li><strong>Switch replay back on:</strong> sets the replay switch, one byte in the map header, to on; replaces <code>level-init.dat</code>, the replay's starting state, with the save's current map; empties <code>replay.dat</code>, the recorded actions.</li>
+      <li><strong>Start a replay later:</strong> takes the save with the full replay and replaces its <code>level-init.dat</code> with the map from the later start point and its <code>replay.dat</code> with the actions after that point.</li>
       <li>Every other file in the zip is copied unchanged.</li>
     </ul>
   </section>
 
   <footer>
-    <p>Tested with Factorio 2.1.23 to 2.1.24 (Space Age, no mods). Understands saves from 2.0 and 2.1 and refuses anything else. Keep a backup of saves you care about.</p>
+    <p>Tested with Factorio 2.1.23 and 2.1.24 (Space Age, no mods). Understands saves from 2.0 and 2.1 and refuses anything else. Keep a backup of saves you care about.</p>
     <p>Unofficial. Not made by or affiliated with Wube Software.</p>
   </footer>
 </main>
 
 <script>
-// ---- Factorio save surgery: re-enable replay from the save's current state ----
-// Pure browser JS (also runs in Node 18+). No libraries.
+// ---- Factorio save surgery for replays. Pure browser JS (also runs in Node 18+). No libraries. ----
 
 const SIG_EOCD = 0x06054b50, SIG_CEN = 0x02014b50, SIG_LOC = 0x04034b50;
 
@@ -254,7 +292,7 @@ function parseHeader(b) {
 
 const chunkNo = (rel) => { const m = /^level\.dat(\d+)$/.exec(rel); return m ? +m[1] : null; };
 
-async function analyzeSave(bytes) {
+async function analyzeSave(bytes, fileName = "") {
   const entries = readZip(bytes);
   const roots = new Set(entries.map((e) => e.name.split("/")[0]));
   if (roots.size !== 1) throw new SaveError("This zip doesn't look like a Factorio save.");
@@ -278,41 +316,92 @@ async function analyzeSave(bytes) {
   else if (header.replay === 0 && init && init.replay === 1 && init.v !== header.v) state = "switched-off";
   else if (header.replay === 0) state = "never";
   else state = "odd";
-  return { entries, root, rel, byRel, chunks, single, first, header, init, replaySize, state };
+  return { fileName, entries, root, rel, byRel, chunks, single, first, header, init, initE, replayE, replaySize, state };
 }
 
-// Returns Blob parts for the new zip.
-async function buildReenabled(a) {
-  const patchedFirst = a.first.slice();
-  patchedFirst[a.header.flagOffset] = 1;
-  const out = []; // {name bytes, method, crc, csize, usize, data parts, time, date, flags}
+// The whole level (map state), decompressed, optionally with the replay switch set to on.
+async function levelParts(a, switchOn) {
+  const first = a.first.slice();
+  if (switchOn) first[a.header.flagOffset] = 1;
+  const parts = [first];
+  for (const c of a.chunks.slice(1)) parts.push(await inflateZlib(c.data));
+  return parts;
+}
+
+// Copy save `a`, replacing level-init.dat and replay.dat; optionally replace the first level chunk.
+async function assemble(a, { newFirst, initParts, replay }) {
   const enc = new TextEncoder();
+  const out = [];
   const add = (rel, method, crc, csize, usize, parts, time = 0, date = 0) =>
     out.push({ nameBytes: enc.encode(`${a.root}/${rel}`), method, crc, csize, usize, parts, time, date });
-
-  let levelParts;
   for (const e of a.entries) {
     const r = a.rel(e);
     if (r === "level-init.dat" || r === "replay.dat") continue;
-    if (a.chunks.length && e === a.chunks[0]) {
-      const z = await deflateZlib(patchedFirst);
+    if (newFirst && a.chunks.length && e === a.chunks[0]) {
+      const z = await deflateZlib(newFirst);
       add(r, 0, crc32([z]), z.length, z.length, [z], e.time, e.date);
-    } else if (!a.chunks.length && e === a.single) {
-      const d = await deflateRaw([patchedFirst]);
-      add(r, 8, crc32([patchedFirst]), d.length, patchedFirst.length, [d], e.time, e.date);
+    } else if (newFirst && !a.chunks.length && e === a.single) {
+      const d = await deflateRaw([newFirst]);
+      add(r, 8, crc32([newFirst]), d.length, newFirst.length, [d], e.time, e.date);
     } else {
       out.push({ nameBytes: e.nameBytes, method: e.method, crc: e.crc, csize: e.csize, usize: e.usize, parts: [e.data], time: e.time, date: e.date });
     }
   }
-  if (a.chunks.length) {
-    levelParts = [patchedFirst];
-    for (const c of a.chunks.slice(1)) levelParts.push(await inflateZlib(c.data));
-  } else levelParts = [patchedFirst];
-  const usize = levelParts.reduce((s, x) => s + x.length, 0);
-  const initZ = await deflateRaw(levelParts);
-  add("level-init.dat", 8, crc32(levelParts), initZ.length, usize, [initZ]);
-  add("replay.dat", 0, 0, 0, 0, []);
+  const usize = initParts.reduce((s, x) => s + x.length, 0);
+  const initZ = await deflateRaw(initParts);
+  add("level-init.dat", 8, crc32(initParts), initZ.length, usize, [initZ]);
+  if (replay.length) {
+    const rz = await deflateRaw([replay]);
+    add("replay.dat", 8, crc32([replay]), rz.length, replay.length, [rz]);
+  } else add("replay.dat", 0, 0, 0, 0, []);
   return writeZip(out);
+}
+
+// Tool 1: replay starts from this save's current state, recording on.
+async function buildReenabled(a) {
+  const parts = await levelParts(a, true);
+  return assemble(a, { newFirst: parts[0], initParts: parts, replay: new Uint8Array(0) });
+}
+
+// Every recorded action starts with a 1-byte type and a 4-byte game tick.
+const tickAt = (bytes, i) => (i + 5 <= bytes.length ? (bytes[i + 1] | (bytes[i + 2] << 8) | (bytes[i + 3] << 16) | (bytes[i + 4] << 24)) >>> 0 : null);
+function gameTime(tick) {
+  if (tick == null) return null;
+  const s = Math.floor(tick / 60), h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60);
+  return { h, m, s: s % 60, text: `${h}:${String(m).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}` };
+}
+
+// Tool 2: two saves of the same replay; the replay of the later one is made to start at the earlier one.
+async function analyzePair(x, y) {
+  for (const a of [x, y]) {
+    if (!a.replayE || a.header.replay !== 1)
+      throw new SaveError(`${a.fileName} has no replay. Use a save that is recording one.`);
+  }
+  if (x.header.v !== y.header.v)
+    throw new SaveError(`These saves are from different game versions (${x.header.v} and ${y.header.v}). A replay only covers one version.`);
+  if (!x.initE || !y.initE || x.initE.crc !== y.initE.crc || x.initE.usize !== y.initE.usize)
+    throw new SaveError("These saves don't belong to the same replay: their replays start from different points.");
+  if (x.replaySize === y.replaySize) throw new SaveError("Both saves are at the same point of the replay. There's nothing to cut.");
+  const [early, late] = x.replaySize < y.replaySize ? [x, y] : [y, x];
+  const er = await entryBytes(early.replayE), lr = await entryBytes(late.replayE);
+  for (let i = 0; i < er.length; i++) {
+    if (er[i] !== lr[i])
+      throw new SaveError(`${early.fileName} isn't an earlier point of ${late.fileName}'s replay. Make it by saving while that replay plays, or use an earlier save of the same game.`);
+  }
+  const rest = lr.subarray(er.length);
+  return {
+    early, late, rest,
+    swapped: early === y,
+    origStart: gameTime(tickAt(lr, 0)),
+    newStart: gameTime(tickAt(rest, 0)),
+    keptBytes: rest.length,
+    droppedBytes: er.length,
+  };
+}
+
+async function buildTrimmed(pair) {
+  const initParts = await levelParts(pair.early, true);
+  return assemble(pair.late, { newFirst: null, initParts, replay: pair.rest });
 }
 
 function writeZip(files) {
@@ -348,73 +437,28 @@ function writeZip(files) {
 <script>
 (() => {
   const $ = (id) => document.getElementById(id);
-  const drop = $("drop"), fileIn = $("file"), go = $("go"), msg = $("msg"), force = $("force"), forceRow = $("force-row");
-  let current = null; // { file, analysis }
-  let downloads; // undefined: not asked yet, null: not available
-
   const kb = (n) => n < 1024 ? `${n} B` : n < 1048576 ? `${(n / 1024).toFixed(1)} KB` : `${(n / 1048576).toFixed(1)} MB`;
-  const show = (text, kind) => { msg.textContent = text; msg.className = `msg ${kind || ""}`; msg.hidden = !text; };
+  const stem = (name) => name.replace(/\.zip$/i, "");
+  const say = (el, text, kind) => { el.textContent = text; el.className = `msg ${kind || ""}`; el.hidden = !text; };
+  const live = (res, tag) => { $(res).classList.remove("example"); $(tag).hidden = true; };
+  const pill = (id, text, cls) => { $(id).textContent = text; $(id).className = `pill ${cls}`; };
 
-  const STATES = {
-    "switched-off": { pill: "Replay switched off by update", cls: "warn",
-      text: (a) => `Factorio ${a.header.v} switched replay off because this map's replay was recorded in ${a.init.v}. Switch it back on and this file records a new replay from where it is now.` },
-    "never": { pill: "No replay", cls: "neutral",
-      text: () => "This save has never recorded a replay. Switch it on to record from this point on." },
-    "recording": { pill: "Recording", cls: "ok",
-      text: (a) => `Replay recording is already on in this save, with ${kb(a.replaySize)} of actions since its start. There's nothing to fix.` },
-    "odd": { pill: "Unusual", cls: "warn",
-      text: () => "Replay is switched on, but the recorded actions or the starting state don't match this version. Switching it on again starts a clean replay from here." },
-  };
-
-  function render(file, a) {
-    const st = STATES[a.state];
-    $("result").classList.remove("example");
-    $("tag").hidden = true;
-    $("pill").textContent = st.pill;
-    $("pill").className = `pill ${st.cls}`;
-    $("explain").textContent = st.text(a);
-    $("r-file").textContent = file.name;
-    $("r-ver").textContent = a.header.v;
-    $("r-rec").textContent = a.header.replay ? "on" : "off";
-    $("r-init").textContent = a.init ? `map state from ${a.init.v}` : "none";
-    $("r-act").textContent = a.replaySize == null ? "none" : kb(a.replaySize);
-    forceRow.hidden = a.state !== "recording";
-    force.checked = false;
-    go.disabled = a.state === "recording";
+  function dropZone(zoneId, inputId, onFile) {
+    const zone = $(zoneId), input = $(inputId);
+    input.addEventListener("change", () => input.files[0] && onFile(input.files[0]));
+    ["dragenter", "dragover"].forEach((t) => zone.addEventListener(t, (e) => { e.preventDefault(); zone.classList.add("over"); }));
+    ["dragleave", "drop"].forEach((t) => zone.addEventListener(t, (e) => { e.preventDefault(); zone.classList.remove("over"); }));
+    zone.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) onFile(f); });
   }
+  const readSave = async (file) => analyzeSave(new Uint8Array(await file.arrayBuffer()), file.name);
+  const why = (e) => (e instanceof SaveError ? e.message : `Reading the file failed: ${e.message}`);
 
-  async function load(file) {
-    show("");
-    go.disabled = true;
-    current = null;
-    try {
-      const a = await analyzeSave(new Uint8Array(await file.arrayBuffer()));
-      current = { file, a };
-      render(file, a);
-    } catch (e) {
-      $("result").classList.remove("example");
-      $("tag").hidden = true;
-      $("pill").textContent = "Can't use this file";
-      $("pill").className = "pill bad";
-      $("explain").textContent = e instanceof SaveError ? e.message : `Reading the file failed: ${e.message}`;
-      ["r-file", "r-ver", "r-rec", "r-init", "r-act"].forEach((id) => ($(id).textContent = "–"));
-      $("r-file").textContent = file.name;
-      forceRow.hidden = true;
-    }
-  }
-
-  fileIn.addEventListener("change", () => fileIn.files[0] && load(fileIn.files[0]));
-  ["dragenter", "dragover"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.add("over"); }));
-  ["dragleave", "drop"].forEach((t) => drop.addEventListener(t, (e) => { e.preventDefault(); drop.classList.remove("over"); }));
-  drop.addEventListener("drop", (e) => { const f = e.dataTransfer.files[0]; if (f) load(f); });
-  force.addEventListener("change", () => { go.disabled = !force.checked; });
-
-  if (window.claude && typeof window.claude.use === "function") {
-    window.claude.use("downloads").then((d) => { downloads = d; }, () => { downloads = null; });
-  } else downloads = null;
-
+  // ---- saving files: Claude's downloads capability when hosted there, a normal download elsewhere
+  let downloads;
+  const inClaude = () => window.claude && typeof window.claude.use === "function";
+  if (inClaude()) window.claude.use("downloads").then((d) => { downloads = d; }, () => { downloads = null; });
   async function deliver(blob, name) {
-    if (window.claude && typeof window.claude.use === "function") {
+    if (inClaude()) {
       if (downloads === undefined) downloads = await window.claude.use("downloads").catch(() => null);
       if (!downloads) throw new Error("This view can't save files. Open the page from its own link to use it.");
       try { await downloads.save({ filename: name, data: blob }); return true; }
@@ -431,21 +475,95 @@ function writeZip(files) {
     return true;
   }
 
-  go.addEventListener("click", async () => {
-    if (!current) return;
-    go.disabled = true;
-    show("Working…");
+  // ---- tool 1
+  let one = null;
+  const go1 = $("go1"), force = $("force"), forceRow = $("force-row"), msg1 = $("msg1");
+  const STATES = {
+    "switched-off": ["Replay switched off by update", "warn",
+      (a) => `Factorio ${a.header.v} switched replay off because this map's replay was recorded in ${a.init.v}. Switch it back on and this file records a new replay from where it is now.`],
+    "never": ["No replay", "neutral", () => "This save has never recorded a replay. Switch it on to record from this point on."],
+    "recording": ["Recording", "ok", (a) => `Replay recording is already on in this save, with ${kb(a.replaySize)} of actions. There's nothing to fix. If you just updated the game, load and save this file in the new version first.`],
+    "odd": ["Unusual", "warn", () => "Replay is switched on, but the recorded actions or the starting state don't match this version. Switching it on again starts a clean replay from here."],
+  };
+  dropZone("drop1", "file1", async (file) => {
+    say(msg1, ""); go1.disabled = true; one = null; live("res1", "tag1");
+    $("r1-file").textContent = file.name;
     try {
-      const blob = new Blob(await buildReenabled(current.a), { type: "application/zip" });
-      const saved = await deliver(blob, current.file.name);
-      show(saved
-        ? `Saved ${current.file.name} (${kb(blob.size)}). Put it in your saves folder in place of the original and keep playing from it.`
-        : "Not saved. Press the button again when you're ready.", saved ? "ok" : "");
+      const a = await readSave(file);
+      one = { file, a };
+      const [label, cls, text] = STATES[a.state];
+      pill("pill1", label, cls);
+      $("explain1").textContent = text(a);
+      $("r1-ver").textContent = a.header.v;
+      $("r1-rec").textContent = a.header.replay ? "on" : "off";
+      $("r1-init").textContent = a.init ? `map state from ${a.init.v}` : "none";
+      $("r1-act").textContent = a.replaySize == null ? "none" : kb(a.replaySize);
+      forceRow.hidden = a.state !== "recording"; force.checked = false;
+      go1.disabled = a.state === "recording";
     } catch (e) {
-      show(e instanceof SaveError ? e.message : e.message || "Something went wrong.", "bad");
-    } finally {
-      go.disabled = current.a.state === "recording" && !force.checked;
+      pill("pill1", "Can't use this file", "bad");
+      $("explain1").textContent = why(e);
+      ["r1-ver", "r1-rec", "r1-init", "r1-act"].forEach((id) => ($(id).textContent = "–"));
+      forceRow.hidden = true;
     }
+  });
+  force.addEventListener("change", () => { go1.disabled = !force.checked; });
+  go1.addEventListener("click", async () => {
+    if (!one) return;
+    go1.disabled = true; say(msg1, "Working…");
+    try {
+      const blob = new Blob(await buildReenabled(one.a), { type: "application/zip" });
+      const saved = await deliver(blob, one.file.name);
+      say(msg1, saved ? `Saved ${one.file.name} (${kb(blob.size)}). Replace the original in your saves folder with it and keep playing.` : "Not saved. Press the button again when you're ready.", saved ? "ok" : "");
+    } catch (e) { say(msg1, e.message || "Something went wrong.", "bad"); }
+    finally { go1.disabled = one.a.state === "recording" && !force.checked; }
+  });
+
+  // ---- tool 2
+  const slots = { a: null, b: null };
+  let pair = null, outName = "";
+  const go2 = $("go2"), msg2 = $("msg2");
+  async function pick(slot, file) {
+    $(`pick2${slot}`).textContent = file.name;
+    try { slots[slot] = await readSave(file); }
+    catch (e) { slots[slot] = { error: why(e), fileName: file.name }; }
+    await update2();
+  }
+  async function update2() {
+    say(msg2, ""); go2.disabled = true; pair = null;
+    if (!slots.a || !slots.b) return;
+    live("res2", "tag2");
+    const bad = [slots.a, slots.b].find((s) => s.error);
+    try {
+      if (bad) throw new SaveError(`${bad.fileName}: ${bad.error}`);
+      pair = await analyzePair(slots.a, slots.b);
+      const t = pair.newStart;
+      outName = t ? `${stem(pair.late.fileName)}_from_${t.h}h${String(t.m).padStart(2, "0")}.zip` : `${stem(pair.late.fileName)}_from_${stem(pair.early.fileName)}.zip`;
+      pill("pill2", "Ready", "ok");
+      $("explain2").textContent = `${pair.late.fileName}'s replay will start where ${pair.early.fileName} was saved${t ? ` (${t.text})` : ""} and play the remaining actions exactly as recorded.`;
+      $("r2-ver").textContent = pair.late.header.v;
+      $("r2-from").textContent = pair.origStart ? pair.origStart.text : "–";
+      $("r2-to").textContent = t ? t.text : "–";
+      $("r2-kept").textContent = kb(pair.keptBytes);
+      $("r2-out").textContent = outName;
+      go2.disabled = false;
+    } catch (e) {
+      pill("pill2", "Can't combine these", "bad");
+      $("explain2").textContent = why(e);
+      ["r2-ver", "r2-from", "r2-to", "r2-kept", "r2-out"].forEach((id) => ($(id).textContent = "–"));
+    }
+  }
+  dropZone("drop2a", "file2a", (f) => pick("a", f));
+  dropZone("drop2b", "file2b", (f) => pick("b", f));
+  go2.addEventListener("click", async () => {
+    if (!pair) return;
+    go2.disabled = true; say(msg2, "Working…");
+    try {
+      const blob = new Blob(await buildTrimmed(pair), { type: "application/zip" });
+      const saved = await deliver(blob, outName);
+      say(msg2, saved ? `Saved ${outName} (${kb(blob.size)}). Put it in your saves folder, load it and choose Start replay.` : "Not saved. Press the button again when you're ready.", saved ? "ok" : "");
+    } catch (e) { say(msg2, e.message || "Something went wrong.", "bad"); }
+    finally { go2.disabled = !pair; }
   });
 })();
 </script>
